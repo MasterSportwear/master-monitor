@@ -12,7 +12,7 @@
  function localDay(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
  function saveSession(s){session=s;if(s)sessionStorage.setItem(storageKey,JSON.stringify(s));else sessionStorage.removeItem(storageKey);}
  function authError(d,fallback){
-  const code=d.code||d.error_code||'';
+  const code=d.error_code||(typeof d.code==='string'?d.code:'')||'';
   const messages={
    invalid_credentials:'E-mail ou senha invalidos. Se ainda nao criou sua conta neste painel, clique em Primeiro acesso.',
    email_not_confirmed:'Confirme seu e-mail pelo link recebido antes de entrar. Verifique tambem o spam.',
