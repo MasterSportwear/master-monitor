@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+vinculo.json
+**/device.key
+**/cloud.json
+**/sync-status.json
+**/dados/
+**/fila/
+**/relatorios/
+test-artifacts/

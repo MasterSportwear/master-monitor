@@ -1,0 +1,4 @@
+project_id = "master-monitor"
+[functions.monitor-api]
+verify_jwt = false
+# A funcao verifica JWT de gestor ou credencial propria de maquina em cada rota.

@@ -1,0 +1,11 @@
+MASTER MONITOR 2.0
+
+Leia LEIA-ME.html antes de instalar.
+O gestor precisa publicar e configurar o sistema online primeiro.
+Depois, cadastre esta maquina no painel e baixe vinculo.json.
+Na conta Windows do colaborador informado, execute INSTALAR.cmd.
+Selecione o arquivo de vinculo quando solicitado.
+Nao envie codigos de vinculo ou credenciais ao GitHub.
+
+Para configurar o sistema: veja PUBLICACAO.md na raiz do pacote completo.
+Esta pasta nao inclui um projeto Supabase ou um site ja publicado.
