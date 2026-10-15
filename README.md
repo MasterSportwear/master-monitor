@@ -38,7 +38,7 @@ Validados em Linux: API, migração Postgres via PGlite, políticas/permissões,
 1. No painel, use **Primeiro acesso** com o e-mail autorizado, defina sua senha e confirme o e-mail.
 2. Entre e clique em **Cadastrar máquina**. Informe colaborador, setor e rótulo do equipamento.
 3. Baixe `vinculo.json`. Ele contém somente um código temporário para aquela máquina; não uma chave administrativa.
-4. No computador do colaborador informado, extraia `windows/`, execute `INSTALAR.cmd` na conta Windows dele e selecione esse arquivo.
+4. Baixe o programa pelo botão **Baixar programa Windows** no painel. No computador do colaborador informado, extraia o ZIP e execute `INSTALAR.cmd` na conta Windows dele e selecione esse arquivo.
 5. Depois do primeiro envio, a máquina aparece com comunicação recente. Os relatórios seguintes carregam automaticamente.
 
 Cada conta Windows deve ter seu próprio cadastro. Conta compartilhada não identifica quem está presente. Não é necessário deixar um navegador aberto no computador do colaborador; a janela do monitor precisa continuar aberta ou minimizada.

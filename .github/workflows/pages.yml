@@ -2,7 +2,7 @@ name: Publicar painel
 on:
   push:
     branches: [main]
-    paths: ['web/**','scripts/build.mjs','.github/workflows/pages.yml']
+    paths: ['web/**','scripts/**','windows/**','.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read

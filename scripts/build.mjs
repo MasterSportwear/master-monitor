@@ -1,3 +1,4 @@
+import {packageWindows} from './package-windows.mjs';
 import {cp,mkdir,readFile,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 const root=resolve(import.meta.dirname,'..'),out=resolve(root,'dist');
@@ -10,4 +11,7 @@ if(url||key){
  await writeFile(resolve(out,'config.js'),'window.MM_CONFIG = Object.freeze('+JSON.stringify({supabaseUrl:url,publishableKey:key})+');\n');
 }
 await writeFile(resolve(out,'.nojekyll'),'');
-console.log('Painel preparado em dist/. Configuracao publica '+(url?'incluida.':'ainda pendente.'));
+console.log('Painel preparado em dist/ com a configuracao publica do projeto.');
+
+await packageWindows(root,resolve(out,'master-monitor-windows.zip'));
+console.log('Instalador Windows preparado, sem dados ou credenciais.');

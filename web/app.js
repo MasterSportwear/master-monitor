@@ -1,5 +1,7 @@
 'use strict';
 (() => {
+ // A confirmacao de e-mail pode retornar tokens no fragmento. Nao os manter no endereco.
+ if(/(?:access_token|refresh_token)=/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);
  const cfg=window.MM_CONFIG||{},storageKey='mm-manager-session-v2';let session=null,pairing=null,busy=false,deviceCache=[],generation=0;
  const apiUrl=String(cfg.supabaseUrl||'').replace(/\/$/,'')+'/functions/v1/monitor-api';
  function validateConfig(){
