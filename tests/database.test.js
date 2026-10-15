@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import{PGli
 const migration=await readFile(new URL('../supabase/migrations/20261015193217_master_monitor_schema.sql',import.meta.url),'utf8');
 test('Postgres: pareamento atomico, deduplicacao, revogacao, agregacao, RLS e retencao',async()=>{
  const db=new PGlite();try{
- await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);');await db.exec(migration);await db.exec(await readFile(new URL('../supabase/migrations/20261015214546_chrome_domains.sql',import.meta.url),'utf8'));
+ await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);');await db.exec(migration);await db.exec(await readFile(new URL('../supabase/migrations/20261015214852_chrome_domains.sql',import.meta.url),'utf8'));
  const uid=crypto.randomUUID(),id=crypto.randomUUID();await db.query('insert into auth.users values($1)',[uid]);await db.query("insert into public.mm_manager_invitations(email) values('gestor@example.com')");assert.equal((await db.query("select public.mm_claim_manager($1,'outro@example.com') claimed",[uid])).rows[0].claimed,false);assert.equal((await db.query("select public.mm_claim_manager($1,'gestor@example.com') claimed",[uid])).rows[0].claimed,true);assert.equal((await db.query("select public.mm_claim_manager($1,'gestor@example.com') claimed",[uid])).rows[0].claimed,false);
  await db.query("insert into public.mm_devices(id,collaborator,sector,label,pairing_hash,pairing_expires_at,created_by)values($1,'Ana','Design','Design 01','code',now()+interval '1 day',$2)",[id,uid]);
  const first=await db.query("select public.mm_pair('code','token','PC-01') result");assert.equal(first.rows[0].result.id,id);assert.equal((await db.query("select public.mm_pair('code','other','PC-02') result")).rows[0].result,null);
@@ -20,7 +20,7 @@ test('Postgres: pareamento atomico, deduplicacao, revogacao, agregacao, RLS e re
 
 test('Postgres: agrupa dominios por maquina e dia sem alterar totais de aplicativos',async()=>{
  const db=new PGlite();try{
- await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);');await db.exec(migration);await db.exec(await readFile(new URL('../supabase/migrations/20261015214546_chrome_domains.sql',import.meta.url),'utf8'));
+ await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);');await db.exec(migration);await db.exec(await readFile(new URL('../supabase/migrations/20261015214852_chrome_domains.sql',import.meta.url),'utf8'));
  const uid=crypto.randomUUID(),id=crypto.randomUUID();await db.query('insert into auth.users values($1)',[uid]);await db.query("insert into public.mm_devices(id,collaborator,sector,label,computer,token_hash,created_by) values($1,'Ana','Design','PC','PC','token',$2)",[id,uid]);
  const records=['drive.google.com','drive.google.com','example.com'].map((domain,i)=>({event_id:crypto.randomUUID(),kind:'dominios',captured_at:'2026-10-15T10:00:0'+i+'-03:00',local_day:'2026-10-15',local_hour:10,payload:{Horario:'2026-10-15T10:00:0'+i+'-03:00',Dominio:domain,Segundos:'5'}}));
  await db.query('select public.mm_ingest($1,$2)',[id,JSON.stringify(records)]);
