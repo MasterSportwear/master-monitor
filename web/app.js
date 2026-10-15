@@ -11,7 +11,26 @@
  }
  function localDay(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
  function saveSession(s){session=s;if(s)sessionStorage.setItem(storageKey,JSON.stringify(s));else sessionStorage.removeItem(storageKey);}
- async function auth(body,grant){validateConfig();const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok){const e=Error(grant==='password'?'E-mail ou senha invalidos, ou acesso ainda nao confirmado.':'Sessao expirada. Entre novamente.');e.status=grant==='password'?400:401;throw e;}saveSession({...d,expires_at:Math.floor(Date.now()/1000)+(d.expires_in||3600)});return d;}
+ function authError(d,fallback){
+  const code=d.code||d.error_code||'';
+  const messages={
+   invalid_credentials:'E-mail ou senha invalidos. Se ainda nao criou sua conta neste painel, clique em Primeiro acesso.',
+   email_not_confirmed:'Confirme seu e-mail pelo link recebido antes de entrar. Verifique tambem o spam.',
+   signup_disabled:'O cadastro esta desativado no Supabase. Ative Allow new users to sign up em Authentication > Sign In / Providers.',
+   email_provider_disabled:'O acesso por e-mail esta desativado no Supabase. Ative o provedor Email em Authentication.',
+   weak_password:'Senha recusada pela politica do Supabase. Use pelo menos 12 caracteres, com maiusculas, minusculas, numeros e simbolos.',
+   over_email_send_rate_limit:'O limite de envio de e-mails do Supabase foi atingido. Aguarde a liberacao do limite ou configure SMTP em Authentication.',
+   over_request_rate_limit:'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.',
+   email_address_not_authorized:'O servico de e-mail padrao do Supabase so permite destinatarios autorizados. Use o e-mail da conta do projeto ou configure SMTP.',
+   email_address_invalid:'Confira o endereco de e-mail informado.',
+   user_already_exists:'Esta conta ja existe. Volte para Entrar e use a senha criada para o painel.',
+   captcha_failed:'O Supabase exige CAPTCHA. A integracao de CAPTCHA precisa ser configurada no painel.'
+  };
+  if(messages[code])return messages[code];
+  if(/sending confirmation email/i.test(d.msg||d.message||''))return 'O Supabase nao conseguiu enviar a confirmacao. Verifique a configuracao SMTP em Authentication.';
+  return fallback+(code?' (codigo: '+String(code).replace(/[^a-z0-9_]/gi,'').slice(0,80)+')':'');
+ }
+ async function auth(body,grant){validateConfig();const r=await fetch(cfg.supabaseUrl+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok){const e=Error(grant==='password'?authError(d,'E-mail ou senha invalidos. Se ainda nao criou sua conta neste painel, clique em Primeiro acesso.'):'Sessao expirada. Entre novamente.');e.status=grant==='password'?400:401;throw e;}saveSession({...d,expires_at:Math.floor(Date.now()/1000)+(d.expires_in||3600)});return d;}
  async function api(route,{method='GET',body,retry=true}={}){
   if(!session)throw Error('Entre com seu login.');if(session.expires_at*1000<Date.now()+60000)await auth({refresh_token:session.refresh_token},'refresh_token');
   const response=await fetch(apiUrl+'/'+route,{method,headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
@@ -42,15 +61,37 @@
  async function showDashboard(){
   $('from').value=localDay();$('to').value=localDay();await api('devices');$('login-view').hidden=true;$('dashboard-view').hidden=false;await load();
  }
- $('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-button').disabled=true;$('login-error').textContent='';try{await auth({email:$('email').value.trim(),password:$('password').value},'password');$('password').value='';await showDashboard();}catch(err){logout(err.message);}finally{$('login-button').disabled=false;}});
- $('first-access').addEventListener('click',async()=>{
+ let signupMode=false;
+ function authMode(signup){
+  signupMode=signup;$('auth-title').textContent=signup?'Criar acesso ao painel':'Acessar o painel';
+  $('login-button').textContent=signup?'Criar conta':'Entrar';
+  $('first-access').textContent=signup?'Ja tenho conta: voltar para Entrar':'Primeiro acesso: criar minha senha';
+  $('confirm-field').hidden=!signup;$('password-help').hidden=!signup;
+  $('confirm-password').disabled=!signup;$('confirm-password').required=signup;
+  $('password').minLength=signup?12:0;$('password').autocomplete=signup?'new-password':'current-password';
+  $('password').value='';$('confirm-password').value='';$('login-error').textContent='';$('login-info').textContent='';
+ }
+ $('first-access').addEventListener('click',()=>{authMode(!signupMode);$('password').focus();});
+ $('login-form').addEventListener('submit',async e=>{
+  e.preventDefault();$('login-button').disabled=true;$('first-access').disabled=true;
   $('login-error').textContent='';$('login-info').textContent='';
-  try{validateConfig();const email=$('email').value.trim(),password=$('password').value;if(!email||password.length<12)throw Error('Preencha e-mail e uma senha de pelo menos 12 caracteres para o primeiro acesso.');
-   $('first-access').disabled=true;
-   const res=await fetch(cfg.supabaseUrl+'/auth/v1/signup?redirect_to='+encodeURIComponent(location.href.split('#')[0]),{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-   const result=await res.json();if(!res.ok)throw Error('Nao foi possivel criar o acesso. Verifique o e-mail, a politica de senha ou tente mais tarde.');
-   $('password').value='';$('login-info').textContent='Se o cadastro foi aceito, confirme o e-mail enviado pelo Supabase e volte para entrar. Apenas o e-mail autorizado na implantacao recebe acesso de gestor.';
-  }catch(e){$('login-error').textContent=e.message;}finally{$('first-access').disabled=false;}
+  try{
+   const email=$('email').value.trim(),password=$('password').value;
+   if(signupMode){
+    validateConfig();
+    if(password.length<12)throw Error('Crie uma senha com pelo menos 12 caracteres.');
+    if(password!==$('confirm-password').value)throw Error('As senhas nao coincidem. Digite a mesma senha nos dois campos.');
+    const res=await fetch(cfg.supabaseUrl+'/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',headers:{apikey:cfg.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const result=await res.json();if(!res.ok)throw Error(authError(result,'Nao foi possivel criar a conta. Tente novamente mais tarde.'));
+    authMode(false);
+    if(result.access_token){saveSession({...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)});await showDashboard();}
+    else $('login-info').textContent='Pedido de cadastro recebido. Verifique a caixa de entrada e o spam de '+email+', confirme pelo link e volte para Entrar. Se a conta ja existia, use a senha anterior.';
+   }else{
+    await auth({email,password},'password');$('password').value='';await showDashboard();
+   }
+  }catch(err){
+   if(!signupMode)logout(err.message);else $('login-error').textContent=err.message;
+  }finally{$('login-button').disabled=false;$('first-access').disabled=false;}
  });
  $('logout').addEventListener('click',()=>{const token=session?.access_token;logout();if(token)fetch(cfg.supabaseUrl+'/auth/v1/logout',{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+token}}).catch(()=>{});});
  $('refresh').addEventListener('click',load);$('load-period').addEventListener('click',load);$('print').addEventListener('click',()=>window.print());for(const id of['day','person','machine','sector'])$(id).addEventListener('change',render);
