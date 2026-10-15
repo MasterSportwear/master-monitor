@@ -9,7 +9,9 @@ MASTER MONITOR 2.0 - monitoramento informado com envio automatico
 Registra aplicativos em primeiro plano, inatividade e diagnosticos do Windows.
 Envia os registros pela internet ao Supabase do gestor a cada 5 minutos.
 A janela de monitoramento permanece disponivel na barra de tarefas.
-Nao registra sites, teclas, mensagens, senhas ou imagens da tela.
+Com a extensao Chrome ativada, registra o dominio da aba ativa.
+Nao registra URLs completas, conteudo, teclas, mensagens ou imagens da tela.
+Para atualizar a integracao, feche o Chrome e o monitor antes de prosseguir.
 
 Instale na conta Windows do colaborador informado. Contas compartilhadas
 nao identificam a pessoa presente. E preciso vincular esta maquina uma vez.
@@ -17,7 +19,7 @@ Registros locais sao auxiliares e podem ser alterados pelo usuario do perfil.
 
 Deseja instalar ou atualizar nesta conta?
 '@
-    if([Windows.Forms.MessageBox]::Show($notice,'Master Monitor 2.0','YesNo','Information') -ne 'Yes'){exit}
+    if([Windows.Forms.MessageBox]::Show($notice,'Master Monitor 2.1','YesNo','Information') -ne 'Yes'){exit}
     $root=Join-Path $env:LOCALAPPDATA 'MasterMonitor';$app=Join-Path $root 'app'
     $m=New-Object Threading.Mutex -ArgumentList @($false,('Local\MasterMonitor-'+[Security.Principal.WindowsIdentity]::GetCurrent().User.Value))
     if(!$m.WaitOne(0)){$m.Dispose();throw 'Feche a janela Master Monitor antes de instalar ou atualizar.'}
@@ -25,7 +27,7 @@ Deseja instalar ou atualizar nesta conta?
     $syncGuard=New-Object Threading.Mutex -ArgumentList @($false,('Local\MasterMonitorSync-'+[Security.Principal.WindowsIdentity]::GetCurrent().User.Value))
     try { $syncHeld=$syncGuard.WaitOne(10000) } catch [Threading.AbandonedMutexException] { $syncHeld=$true }
     if(!$syncHeld){throw 'Aguarde o envio em andamento terminar e tente instalar novamente.'}
-    $required=@('Monitor.ps1','Core.ps1','Queue.ps1','Sync.ps1','Desinstalar.ps1','DESINSTALAR.cmd','INICIAR.cmd','PAINEL.html','LEIA-ME.html')
+    $required=@('Monitor.ps1','Core.ps1','Queue.ps1','Sync.ps1','Desinstalar.ps1','DESINSTALAR.cmd','INICIAR.cmd','PAINEL.html','LEIA-ME.html','Chrome.ps1','ChromeHost.cs')
     foreach($name in $required){if(!(Test-Path (Join-Path $PSScriptRoot $name))){throw "Pacote incompleto: $name"}}
     New-Item $app -ItemType Directory -Force|Out-Null
     $existing=Join-Path $root 'cloud.json'
@@ -73,6 +75,9 @@ Deseja instalar ou atualizar nesta conta?
     }
     if(!(Test-Path (Join-Path $root 'device.key'))){throw 'Credencial local ausente. Baixe um novo vinculo no painel.'}
     foreach($name in $required){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $app $name) -Force}
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'chrome') -Destination $app -Recurse -Force
+    . (Join-Path $app 'Chrome.ps1')
+    Install-MMChrome $app
     $shell=New-Object -ComObject WScript.Shell
     $exe=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $arguments='-NoProfile -STA -ExecutionPolicy Bypass -File "'+(Join-Path $app 'Monitor.ps1')+'"'
@@ -81,7 +86,7 @@ Deseja instalar ou atualizar nesta conta?
         $shortcut.TargetPath=$exe;$shortcut.Arguments=$arguments;$shortcut.WorkingDirectory=$app;$shortcut.WindowStyle=7
         $shortcut.Description='Monitoramento informado e sincronizacao com o painel do gestor.';$shortcut.Save()
     }
-    [Windows.Forms.MessageBox]::Show('Instalado. O monitor sera aberto agora. Confira a confirmacao do primeiro envio na janela e a ultima comunicacao no painel.','Master Monitor 2.0')|Out-Null
+    [Windows.Forms.MessageBox]::Show('Instalado. Para dominios, carregue a pasta chrome em chrome://extensions e ative a coleta no icone da extensao (veja LEIA-ME.html). O monitor sera aberto agora. Confira a confirmacao do primeiro envio na janela e a ultima comunicacao no painel.','Master Monitor 2.1')|Out-Null
     Start-Process $exe -ArgumentList $arguments -WindowStyle Minimized
 }catch{[Windows.Forms.MessageBox]::Show($_.Exception.Message,'Falha na instalacao','OK','Error')|Out-Null;exit 1}
 finally{if($syncGuard){if($syncHeld){$syncGuard.ReleaseMutex()};$syncGuard.Dispose()}}

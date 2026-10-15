@@ -74,3 +74,9 @@ node scripts/build.mjs
 O `dist/` gerado não inclui dados ou segredos. A chave pública é esperada; `service_role` e `sb_secret_*` nunca vão para o navegador ou para o Windows.
 
 Ao substituir o cadastro de um perfil já vinculado, filas pendentes do cadastro anterior são preservadas em `fila-anterior-*` e não são atribuídas ao novo colaborador. A instalação espera o sincronizador em andamento terminar. Uma reinstalação com o mesmo arquivo já vinculado reutiliza a credencial local.
+
+## Domínios do Chrome — 2.1
+
+Extensão visível em `chrome/`, com ativação explícita no próprio navegador. Envia apenas snapshots do hostname via Native Messaging ao perfil Windows. O coletor confirma Chrome em primeiro plano e sessão ativa e registra amostras `dominios` na mesma fila autenticada. Não utiliza títulos, conteúdo, histórico, URLs completas ou credenciais de navegação. Snapshot com mais de 20 segundos ou foco incerto é descartado. O dashboard e o HTML local mostram tempo estimado e primeira/última amostra por domínio, máquina e colaborador, sem duplicar os totais de aplicativos.
+
+Atualize com Chrome e monitor fechados; use o cadastro existente. Carregue `%LOCALAPPDATA%\MasterMonitor\app\chrome` em `chrome://extensions` → Modo do desenvolvedor → Carregar sem compactação. Leia o aviso e ative a extensão. Distribuição manual para piloto; não publicada na Web Store. A integração completa requer validação em Windows real.

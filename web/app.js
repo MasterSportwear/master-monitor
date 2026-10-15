@@ -37,7 +37,7 @@
   if(response.status===401&&retry){await auth({refresh_token:session.refresh_token},'refresh_token');return api(route,{method,body,retry:false});}
   const value=await response.json();if(!response.ok){const e=Error(value.error||'Falha ao consultar o servidor.');e.status=response.status;throw e;}return value;
  }
- function clean(){data={uso:[],desempenho:[],eventos:[],operacao:[]};keys.clear();filters();render();$('device-list').replaceChildren();$('status').textContent='';$('report-error').textContent='';pairing=null;deviceCache=[];$('pair-output').textContent='';$('pair-result').hidden=true;}
+ function clean(){data={uso:[],desempenho:[],eventos:[],operacao:[],dominios:[]};keys.clear();filters();render();$('device-list').replaceChildren();$('status').textContent='';$('report-error').textContent='';pairing=null;deviceCache=[];$('pair-output').textContent='';$('pair-result').hidden=true;}
  function logout(message=''){generation++;saveSession(null);clean();$('dashboard-view').hidden=true;$('login-view').hidden=false;$('password').value='';$('login-error').textContent=message;}
  function when(v){return v?new Date(v).toLocaleString('pt-BR'):'—';}
  function renderDevices(){
@@ -51,7 +51,7 @@
    if(!from||!to||to<from||(Date.parse(to)-Date.parse(from))/86400000>30)throw Error('Selecione um período válido de até 31 dias.');
    const[d,r]=await Promise.all([api('devices'),api('report?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to))]);
    if(run!==generation||!session)return;
-   deviceCache=d.devices||[];renderDevices();data={uso:r.uso||[],desempenho:r.desempenho||[],eventos:r.eventos||[],operacao:r.operacao||[]};filters();render();
+   deviceCache=d.devices||[];renderDevices();data={uso:r.uso||[],desempenho:r.desempenho||[],eventos:r.eventos||[],operacao:r.operacao||[],dominios:r.dominios||[]};filters();render();
    let label='Atualizado às '+new Date().toLocaleTimeString('pt-BR')+' · '+r.raw_count.toLocaleString('pt-BR')+' registros no período';
    if(r.eventos_total>1000||r.operacao_total>1000)label+=' · LISTAS LIMITADAS: '+r.eventos_total+' eventos e '+r.operacao_total+' registros de operação. Reduza o período.';
    $('status').textContent=label;

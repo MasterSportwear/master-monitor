@@ -4,6 +4,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 . (Join-Path $PSScriptRoot 'Core.ps1')
 . (Join-Path $PSScriptRoot 'Queue.ps1')
+. (Join-Path $PSScriptRoot 'Chrome.ps1')
 $script:root = Join-Path $env:LOCALAPPDATA 'MasterMonitor'
 New-Item $script:root -ItemType Directory -Force | Out-Null
 $script:mutex = New-Object Threading.Mutex -ArgumentList @($false, ('Local\MasterMonitor-' + [Security.Principal.WindowsIdentity]::GetCurrent().User.Value))
@@ -124,6 +125,7 @@ function Sample-Usage {
         } elseif ($null -ne $script:previous) {
             # Intervalo atribuido a amostra anterior, nunca extrapolado sobre lacunas.
             Write-MMRow $script:root 'uso' ([pscustomobject]@{ Horario=$script:previous.Time.ToString('o'); Aplicativo=$script:previous.App; Estado=$script:previous.State; Segundos=([math]::Round($elapsed,2)).ToString([Globalization.CultureInfo]::InvariantCulture) }) $script:previous.Time
+            if($script:previous.Domain) { Write-MMRow $script:root 'dominios' ([pscustomobject]@{ Horario=$script:previous.Time.ToString('o'); Dominio=$script:previous.Domain; Segundos=([math]::Round($elapsed,2)).ToString([Globalization.CultureInfo]::InvariantCulture) }) $script:previous.Time }
         }
     }
     $script:lastTick = $tick
@@ -144,18 +146,21 @@ function Sample-Usage {
             }
         } catch { $app = '(processo indisponivel)' }
     } elseif ($state -eq 'ativo') { $state = 'sem janela' }
-    $script:previous = @{ Time=$now; App=$app; State=$state }
+    $domain=''
+    if($state -eq 'ativo' -and $app -eq 'chrome.exe') { $domain=Get-MMChromeDomain $script:root $now }
+    $script:previous = @{ Time=$now; App=$app; State=$state; Domain=$domain }
+    if($app -eq 'chrome.exe' -and $state -eq 'ativo'){ if($domain){return "$app | $state | $domain"}; return "$app | $state | Chrome: sem dominio disponivel (confira a extensao)" }
     return "$app | $state"
 }
 $form = New-Object Windows.Forms.Form
-$form.Text = 'Master Monitor 2.0 - monitoramento informado'
+$form.Text = 'Master Monitor 2.1 - monitoramento informado'
 $form.Size = New-Object Drawing.Size(670,430)
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedSingle'; $form.MaximizeBox = $false
 $label = New-Object Windows.Forms.Label
 $label.Location = New-Object Drawing.Point(20,20); $label.Size = New-Object Drawing.Size(620,95)
 $label.Font = New-Object Drawing.Font('Segoe UI',11)
-$label.Text = "MONITORAMENTO ATIVO - $($script:cfg.Colaborador) | $($script:cfg.Setor)`r`nEste computador registra aplicativos, inatividade e falhas, com envio ao painel do gestor.`r`nNao captura teclas, mensagens, imagens da tela ou sites."
+$label.Text = "MONITORAMENTO ATIVO - $($script:cfg.Colaborador) | $($script:cfg.Setor)`r`nEste computador registra aplicativos, inatividade e falhas, com envio ao painel do gestor.`r`nCom a extensao ativada, registra o dominio da aba ativa do Chrome. Nao captura conteudo, teclas, mensagens ou tela."
 $form.Controls.Add($label)
 $status = New-Object Windows.Forms.Label
 $status.Location = New-Object Drawing.Point(20,120); $status.Size = New-Object Drawing.Size(620,65)

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Master Monitor — Domínios do Chrome",
+  "version": "2.1.0",
+  "description": "Monitoramento informado do domínio da aba ativa. Requer o Master Monitor instalado e ativação explícita.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmMi01eW3zB0NJJU2GKRPvsBldrDCR32mLaROz/y5ewwWAJoHCzdFSojYeRpDzbakU0igyB5csfSnuHpolu4yv5k9mFW6uc2ABR3IoSWKb+HR6QkR4IVUQ0orsHVSOminhrqv6xuR7v+p+3DwIZAqY3ZXUyGU37Bgf/FpC/pUmwH7DUgzUSSzgAajrgantf5tyeKGdU3cm2wP+0S7Ho3UcztTK2FLD3cqgCBYmddp4xEK7T9yZOQK3yNuJDuizsIK2iqKtACG2f+LxKPEaP1ke0VfzbfNIlJckyvcd62lukduYQA5qydJItNcuwRODd3jwsBHHgfbM8L8Wd8Pt77NrQIDAQAB",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "tabs",
+    "nativeMessaging",
+    "storage"
+  ],
+  "incognito": "not_allowed",
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Master Monitor — domínios"
+  }
+}

@@ -1,4 +1,4 @@
-MASTER MONITOR 2.0
+MASTER MONITOR 2.1
 
 Leia LEIA-ME.html antes de instalar.
 Painel: https://mastersportwear.github.io/master-monitor/
@@ -9,3 +9,9 @@ Nao envie codigos de vinculo ou credenciais ao GitHub.
 
 Para configurar o sistema: veja PUBLICACAO.md na raiz do pacote completo.
 O projeto Supabase e o painel foram configurados; realize o piloto antes de ampliar.
+
+DOMINIOS CHROME: feche o monitor e o Chrome antes de atualizar.
+Em maquina ja vinculada, cancele a escolha de vinculo para manter o cadastro.
+Depois, abra chrome://extensions, ative Modo do desenvolvedor,
+Carregar sem compactacao e escolha %LOCALAPPDATA%\MasterMonitor\app\chrome.
+Abra a extensao e ative a coleta apos ler o aviso. Veja LEIA-ME.html.

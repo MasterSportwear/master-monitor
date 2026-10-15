@@ -11,9 +11,10 @@ try {
             $path = Join-Path $dir 'Master Monitor.lnk'
             if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
         }
+        Remove-Item 'HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.mastersportwear.monitor' -Recurse -Force -ErrorAction SilentlyContinue
         $app = Join-Path (Join-Path $env:LOCALAPPDATA 'MasterMonitor') 'app'
         if (Test-Path -LiteralPath $app) { Remove-Item -LiteralPath $app -Recurse -Force }
-        [Windows.Forms.MessageBox]::Show('Desinstalado. Os dados permanecem em %LOCALAPPDATA%\MasterMonitor. Apague essa pasta manualmente se quiser excluir os registros.','Master Monitor') | Out-Null
+        [Windows.Forms.MessageBox]::Show('Desinstalado. Remova tambem a extensao em chrome://extensions. Os dados permanecem em %LOCALAPPDATA%\MasterMonitor. Apague essa pasta manualmente se quiser excluir os registros.','Master Monitor') | Out-Null
     } finally { $m.ReleaseMutex(); $m.Dispose() }
 } catch {
     [Windows.Forms.MessageBox]::Show($_.Exception.Message,'Nao foi possivel desinstalar','OK','Error') | Out-Null

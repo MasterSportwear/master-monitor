@@ -49,7 +49,7 @@ function Convert-MMTable {
 function Write-MMReport {
     param([string]$Root, [string]$Day, [string]$Sector, [string]$Computer)
     $payload = [ordered]@{ gerado = (Get-Date).ToString('dd/MM/yyyy HH:mm:ss zzz') }
-    foreach ($kind in @('uso','desempenho','eventos','operacao')) {
+    foreach ($kind in @('uso','desempenho','eventos','operacao','dominios')) {
         $rows = @(Read-MMRows $Root $Day $kind)
         foreach ($r in $rows) {
             if (!$r.Computador) { $r | Add-Member -NotePropertyName Computador -NotePropertyValue $Computer -Force }

@@ -1,6 +1,6 @@
 'use strict';
 const MM = (() => {
-const kinds = ['uso','desempenho','eventos','operacao'];
+const kinds = ['uso','desempenho','eventos','operacao','dominios'];
 function parseCSV(text) {
  text = text.replace(/^\uFEFF/, ''); const rows=[]; let row=[], cell='', quote=false;
  for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quote&&text[i+1]==='"'){cell+='"';i++;}else quote=!quote;}
@@ -16,7 +16,7 @@ function summarize(rows){const groups=new Map();for(const r of rows){const id=id
 function intervals(rows){const buckets=Array.from({length:24},()=>({active:0,idle:0,unknown:0}));for(const r of rows){let remain=seconds(r);const m=String(r.Horario).match(/T(\d\d):(\d\d):(\d\d)(?:\.(\d+))?/);if(!m)continue;let t=Number(m[1])*3600+Number(m[2])*60+Number(m[3])+Number('0.'+(m[4]||0));const key=r.Estado==='ativo'?'active':r.Estado==='inativo'?'idle':'unknown';while(remain>0&&t<86400){const hour=Math.floor(t/3600),part=Math.min(remain,(hour+1)*3600-t);buckets[hour][key]+=part;t+=part;remain-=part;}}return buckets;}
 return{parseCSV,number,seconds,ident,summarize,intervals,kinds};})();
 const $=id=>document.getElementById(id), fmt=n=>Number(n).toLocaleString('pt-BR',{maximumFractionDigits:1}),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let data={uso:[],desempenho:[],eventos:[],operacao:[]},keys=new Set();
+let data={uso:[],desempenho:[],eventos:[],operacao:[],dominios:[]},keys=new Set();
 function add(kind,rows){let count=0;for(const r of rows){if(!/^\d{4}-\d\d-\d\dT/.test(r.Horario||''))continue;const key=kind+'|'+JSON.stringify(Object.entries(r).sort((a,b)=>a[0].localeCompare(b[0])));if(!keys.has(key)){keys.add(key);data[kind].push(r);count++;}}return count;}
 function filters(){const all=Object.values(data).flat();for(const [id,field]of[['day','_day'],['person','Colaborador'],['machine','Computador'],['sector','Setor']]){const old=$(id).value,values=[...new Set(all.map(r=>field==='_day'?r.Horario.slice(0,10):field==='Computador'?(r.DeviceId||r.Computador||'Não identificado'):(r[field]||'Não identificado')))].sort();$(id).replaceChildren(new Option('Todos',''));for(const v of values){const r=field==='Computador'?all.find(r=>(r.DeviceId||r.Computador)===v):null;const label=r&&r.Rotulo?r.Rotulo+' ('+r.Computador+')':v;$(id).add(new Option(label,v));}if(values.includes(old))$(id).value=old;else if(values.length===1)$(id).value=values[0];}}
 function chosen(r){return(!$('day').value||r.Horario.slice(0,10)===$('day').value)&&(!$('person').value||(r.Colaborador||'Não identificado')===$('person').value)&&(!$('machine').value||(r.DeviceId||r.Computador||'Não identificado')===$('machine').value)&&(!$('sector').value||(r.Setor||'Não identificado')===$('sector').value);}
@@ -28,7 +28,20 @@ function perf(rows){const machines=new Set(rows.map(r=>r.DeviceId||r.Computador)
  for(let h=0;h<24;h+=2)svg+='<text x="'+(40+h/24*1040)+'" y="225" font-size="11">'+h+'h</text>';
  for(const[k,color]of[['CPU','#e56625'],['RAM','#376c9b'],['Disco','#7b6ba4']]){let path='',previous=null;for(const r of rows){const v=MM.number(r[k]);if(v===null){previous=null;continue;}const time=r.Horario.match(/T(\d\d):(\d\d):(\d\d)/);if(!time)continue;const s=Number(time[1])*3600+Number(time[2])*60+Number(time[3]),x=40+s/86400*1040,y=200-Math.min(100,Math.max(0,v))*1.6;path+=(previous===null||s-previous>450?'M':'L')+x.toFixed(2)+','+y.toFixed(2)+' ';svg+='<circle cx="'+x+'" cy="'+y+'" r="1.7" fill="'+color+'"><title>'+esc(r.Horario)+' '+k+': '+fmt(v)+'%</title></circle>';previous=s;}svg+='<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="1.6"/>';}
  return svg+'</svg>';}
-function render(){const use=data.uso.filter(chosen),p=data.desempenho.filter(chosen),ev=data.eventos.filter(chosen),op=data.operacao.filter(chosen);const groups=MM.summarize(use);for(const[id,k]of[['active','active'],['idle','idle'],['unknown','unknown']])$(id).textContent=fmt(groups.reduce((s,g)=>s+g[k],0)/60)+' min';$('eventsCount').textContent=String(ev.length);
+function renderDomains(){
+ const rows=(data.dominios||[]).filter(chosen),groups=new Map(),totals=new Map();
+ for(const r of rows){
+  const key=JSON.stringify([...MM.ident(r),r.Dominio]);
+  if(!groups.has(key))groups.set(key,{...r,Segundos:0,UltimoHorario:r.UltimoHorario||r.Horario});
+  const g=groups.get(key);g.Segundos+=MM.seconds(r);g.Horario=g.Horario<r.Horario?g.Horario:r.Horario;
+  const end=r.UltimoHorario||r.Horario;g.UltimoHorario=g.UltimoHorario>end?g.UltimoHorario:end;
+  totals.set(r.Dominio,(totals.get(r.Dominio)||0)+MM.seconds(r));
+ }
+ $('domains-chart').innerHTML=rows.length?bars([...totals].sort((a,b)=>b[1]-a[1])):'<p class="empty">Sem domínios neste filtro. Requer monitor 2.1 e extensão Chrome ativada. Não há coleta retroativa.</p>';
+ const stamp=v=>String(v).replace('T',' ').replace(/\.\d+/,'');
+ table('domains', [...groups.values()].sort((a,b)=>b.Segundos-a.Segundos),[['Domínio','Dominio'],['Colaborador','Colaborador'],['Máquina',r=>r.Rotulo?r.Rotulo+' ('+r.Computador+')':r.Computador],['Setor','Setor'],['Uso estimado (min)',r=>fmt(r.Segundos/60)],['Primeira amostra',r=>stamp(r.Horario)],['Última amostra',r=>stamp(r.UltimoHorario)]]);
+}
+function render(){renderDomains();const use=data.uso.filter(chosen),p=data.desempenho.filter(chosen),ev=data.eventos.filter(chosen),op=data.operacao.filter(chosen);const groups=MM.summarize(use);for(const[id,k]of[['active','active'],['idle','idle'],['unknown','unknown']])$(id).textContent=fmt(groups.reduce((s,g)=>s+g[k],0)/60)+' min';$('eventsCount').textContent=String(ev.length);
  const apps=new Map();for(const r of use)if(r.Estado==='ativo')apps.set(r.Aplicativo,(apps.get(r.Aplicativo)||0)+MM.seconds(r));$('apps').innerHTML=bars([...apps].sort((a,b)=>b[1]-a[1]));$('hourly').innerHTML=hourly(use);$('performance').innerHTML=perf(p);
  let metrics=[];for(const k of['CPU','RAM','Disco']){const valid=p.filter(r=>MM.number(r[k])!==null);if(valid.length){const count=valid.reduce((s,r)=>s+(MM.number(r[k+'_Amostras'])??1),0),sum=valid.reduce((s,r)=>s+(MM.number(r[k+'_Soma'])??MM.number(r[k])),0),peak=valid.reduce((s,r)=>Math.max(s,MM.number(r[k+'_Pico'])??MM.number(r[k])),0),high=valid.reduce((s,r)=>s+(MM.number(r[k+'_Altas'])??(MM.number(r[k])>=90?1:0)),0);metrics.push(k+': media '+fmt(sum/count)+'%, pico '+fmt(peak)+'%, '+high+'/'+count+' amostras >=90%');}}const free=new Map();for(const r of[...p].sort((a,b)=>a.Horario.localeCompare(b.Horario)))if(MM.number(r.DiscoLivreGB)!==null)free.set(r.Computador,r.DiscoLivreGB);for(const[m,n]of free)metrics.push('Livre no disco Windows ('+m+'): '+fmt(n)+' GB');$('metrics').textContent=metrics.join(' | ');
  table('people',groups,[['Colaborador',r=>r.id[0]],['Máquina',r=>r.id[1]],['Setor',r=>r.id[2]],['Ativo (min)',r=>fmt(r.active/60)],['Inativo (min)',r=>fmt(r.idle/60)],['Sem classificação (min)',r=>fmt(r.unknown/60)]]);

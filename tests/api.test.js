@@ -55,3 +55,9 @@ test('primeiro acesso exige e-mail confirmado e convite autorizado no servidor',
  env=setup({allowed:false,confirmed:true,claim:false});assert.equal((await env.handle(req('devices',{token:'manager'}))).status,403);
  env=setup({allowed:false,confirmed:true,claim:true});assert.equal((await env.handle(req('devices',{token:'manager'}))).status,200);
 });
+
+test('dominios: aceita apenas hostname, remove outros campos e usa identidade da maquina',()=>{
+ const r={...record(),kind:'dominios',payload:{Horario:new Date().toISOString(),Dominio:'DRIVE.GOOGLE.COM',Segundos:'5',URL:'https://secret/',Titulo:'private',Colaborador:'forged'}};
+ const p=normalizeRecords([r],device)[0].payload;assert.equal(p.Dominio,'drive.google.com');assert.equal(p.Colaborador,'Ana');assert.equal(p.URL,undefined);assert.equal(p.Titulo,undefined);
+ for(const domain of['https://example.com/x','example.com?token=secret','example..com','<img src=x>','-bad.com','a'.repeat(64)+'.com'])assert.throws(()=>normalizeRecords([{...r,payload:{...r.payload,Dominio:domain}}],device));
+});

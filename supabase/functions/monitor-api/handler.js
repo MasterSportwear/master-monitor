@@ -1,5 +1,5 @@
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KINDS=new Set(['uso','desempenho','eventos','operacao']);
+const KINDS=new Set(['uso','desempenho','eventos','operacao','dominios']);
 export class ApiError extends Error { constructor(status,message){super(message);this.status=status;} }
 export async function hash(value){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 export function secret(prefix){const b=new Uint8Array(32);crypto.getRandomValues(b);return prefix+[...b].map(x=>x.toString(16).padStart(2,'0')).join('');}
@@ -16,6 +16,10 @@ export function normalizeRecords(records,device){
   if(r.kind==='uso'){
    if(!['ativo','inativo','sem janela','sessao indisponivel'].includes(r.payload.Estado))throw new ApiError(400,'Estado invalido.');
    Object.assign(p,{Aplicativo:text(r.payload.Aplicativo,260),Estado:r.payload.Estado,Segundos:number(r.payload.Segundos,0,180)});
+  }else if(r.kind==='dominios'){
+   const domain=text(r.payload.Dominio,253).toLowerCase();
+   if(!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/.test(domain))throw new ApiError(400,'Dominio invalido: envie somente o hostname.');
+   Object.assign(p,{Dominio:domain,Segundos:number(r.payload.Segundos,0,180)});
   }else if(r.kind==='desempenho'){
    for(const k of ['CPU','RAM','Disco'])p[k]=number(r.payload[k],0,100,true);p.DiscoLivreGB=number(r.payload.DiscoLivreGB,0,1e9,true);
   }else{
