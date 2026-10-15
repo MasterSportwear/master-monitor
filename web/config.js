@@ -1,2 +1,1 @@
-// Configuracao publica. Nunca use service_role ou sb_secret aqui.
-window.MM_CONFIG = Object.freeze({ supabaseUrl: '', publishableKey: '' });
+window.MM_CONFIG = Object.freeze({"supabaseUrl":"https://tctiuewlstrnkwayfaru.supabase.co","publishableKey":"sb_publishable_9wK_BahDd1_FdSajx2aX_A_zZlL6xDT"});

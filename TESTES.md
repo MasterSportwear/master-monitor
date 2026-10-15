@@ -14,8 +14,12 @@ Os dados usados nos testes são fictícios e ficam somente em `tests/`. O build 
 ## Ainda não executados
 
 - Instalação, DPAPI, atalhos COM, Win32/CIM e logs em uma máquina Windows real.
-- Deploy e integração com um projeto real do Supabase e GitHub Pages.
+- Transmissão de registros por um coletor instalado no Windows real.
 - Entrega real de e-mail de confirmação, quotas do projeto e políticas corporativas do Windows.
 - Teste de vários expedientes simultâneos ou de volume em produção.
 
-O pacote é uma versão de piloto. A publicação depende da definição dos recursos e da configuração inicial do ambiente, descrita em `PUBLICACAO.md`.
+O coletor é uma versão de piloto. Banco, API e painel foram implantados; a criação da senha do gestor e a configuração do redirecionamento de confirmação permanecem como etapas iniciais do usuário.
+
+Implantação: esquema aplicado no Supabase e API monitor-api ativa. Job de exclusão automática não aplicado (pendente de autorização). Painel GitHub Pages publicado.
+
+Testes ao vivo: API /devices sem login 401; /pair com código inexistente 401; /ingest com credencial inexistente 401; acesso anônimo a mm_records negado (permission denied); Auth Settings confirmou e-mail habilitado e confirmação obrigatória. Não foram criados usuários ou máquinas fictícios no projeto real.

@@ -6,7 +6,7 @@ A configuração inicial é feita uma vez. Depois dela, o gestor usa o painel e 
 
 Escolha a organização e o projeto Supabase. Para um novo projeto, confirme o custo e a disponibilidade do plano antes de criar. Crie um repositório próprio, sugerido `master-monitor`, sem reutilizar outros sistemas sem planejamento. A conta conectada nesta sessão foi MasterSportwear; não foi definido um repositório de destino.
 
-Não há projeto Supabase configurado nestes arquivos. `web/config.js` permanece sem URL e sem chave até a implantação. Não há um endereço publicado nesta entrega.
+Projeto configurado: master-monitor (tctiuewlstrnkwayfaru). Painel publicado: https://mastersportwear.github.io/master-monitor/. web/config.js contém somente URL e chave pública do projeto.
 
 ## 2. Banco e API
 
@@ -22,7 +22,7 @@ O `verify_jwt=false` é intencional: a função aplica autenticação própria e
 
 A função usa `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` fornecidas pelo runtime do Supabase. Não copie a chave administrativa para o HTML ou para o instalador. Opcionalmente defina `MM_ALLOWED_ORIGIN` para a origem do seu painel (ex.: `https://mastersportwear.github.io`); sem isso, o CORS aceita origens, mas a autorização continua exigida por token. CORS não é a barreira de acesso ao banco.
 
-As migrações criam apenas tabelas com prefixo `mm_`, funções correspondentes e um job `master-monitor-retention`. A migração de retenção exige suporte a pg_cron, disponível no Supabase. Não execute em um banco de terceiros sem conferir os objetos existentes.
+A migração cria tabelas com prefixo mm_ e as funções correspondentes. O job de limpeza NÃO foi ativado: exclusões automáticas exigem autorização explícita. O script opcional foi separado em scripts/retention-pending-approval.sql e não será executado por db push. Não execute em um banco de terceiros sem conferir os objetos existentes.
 
 ## 3. Gestor e autenticação
 
@@ -57,7 +57,7 @@ Não transforme um repositório privado em público automaticamente. A disponibi
 - Interrompa a internet por alguns minutos. Confirme que a fila aumenta e, ao voltar, diminui sem duplicar tempos.
 - Feche e reabra o monitor; faça um reinício normal do Windows e confirme o início automático na mesma conta.
 - Revogue um cadastro de teste: o servidor deve recusar os envios posteriores. O histórico deve permanecer.
-- Confirme a tarefa `master-monitor-retention` no Supabase Cron.
+- A limpeza automática da nuvem permanece desativada enquanto não houver aprovação explícita do prazo de exclusão.
 
 Não provoque quedas de energia, tela azul ou travamentos para testar.
 
@@ -73,7 +73,7 @@ Para alterar a retenção da nuvem, use, por exemplo:
 update public.mm_settings set retention_days=30 where singleton;
 ```
 
-O job diário apaga definitivamente os registros recebidos antes do prazo. Faça exportações/backups conforme a necessidade. A rotina não remove dados locais ou usuários.
+Se a rotina de limpeza for autorizada e ativada, o job apagará definitivamente os registros recebidos antes do prazo. Faça exportações/backups conforme a necessidade. A rotina não remove dados locais ou usuários.
 
 ## Referências oficiais
 

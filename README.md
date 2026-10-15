@@ -13,19 +13,20 @@ Monitoramento informado de aplicativos e diagnóstico do Windows, com envio auto
 - Última comunicação, última amostra e revogação de novas transmissões de uma máquina.
 - Gráficos de desempenho com médias em cinco minutos; resumo preserva médias ponderadas, picos reais e contagem das amostras >=90%.
 - Banco com RLS e sem acesso direto para anon/authenticated. A API valida a identidade de gestor ou de máquina.
-- Retenção dos dados recebidos de 30 dias, ajustável no banco, com execução diária por pg_cron.
+- Limpeza automática da nuvem desativada. A rotina opcional de exclusão após 30 dias está em scripts/retention-pending-approval.sql e exige autorização explícita antes de executar.
 
 ## Situação desta entrega
 
-O código e o pacote de instalação estão preparados. **Projeto Supabase, repositório, hospedagem e conta inicial de gestor precisam ser configurados antes de usar a versão online.** Ter conectado as contas não cria esses recursos automaticamente.
+Código e painel publicados em https://mastersportwear.github.io/master-monitor/. Projeto Supabase master-monitor vinculado; esquema e API implantados. O gestor autorizado precisa criar sua senha e confirmar seu e-mail no primeiro acesso.
 
-Validados em Linux: API, migração Postgres via PGlite, políticas/permissões, relatórios, painel em Chromium, sintaxe PowerShell e fila offline. **Não foi executado o instalador/coletor em Windows nem validado o envio contra um projeto Supabase real nesta entrega.** Faça um piloto em uma máquina antes de ampliar.
+Validados em Linux: API, migração Postgres via PGlite, políticas/permissões, relatórios, painel em Chromium, sintaxe PowerShell e fila offline. **O instalador/coletor em Windows ainda exige piloto.** A API e o banco foram implantados no Supabase; a transmissão de uma máquina real será validada no piloto. Faça um piloto em uma máquina antes de ampliar.
 
 ## Estrutura
 
 - `windows/`: instalador, coletor, fila, sincronizador e relatórios locais.
 - `web/`: painel online, sem dependências de CDN.
-- `supabase/migrations/`: esquema e rotina de retenção.
+- `supabase/migrations/`: esquema aplicado ao projeto.
+- `scripts/retention-pending-approval.sql`: rotina destrutiva opcional, não aplicada.
 - `supabase/functions/monitor-api/`: API única com rotas de gestor e de dispositivo.
 - `.github/workflows/`: testes, publicação do painel e publicação manual do backend.
 - `scripts/authorize-manager.sql`: convite inicial do e-mail de gestor.
@@ -46,7 +47,7 @@ Cada conta Windows deve ter seu próprio cadastro. Conta compartilhada não iden
 
 A fila só remove um lote depois da confirmação do servidor. Falhas de internet, códigos HTTP de erro e respostas incompletas preservam os registros para tentar novamente. O painel mostra a última comunicação real ao servidor, sem afirmar a causa de uma interrupção.
 
-A fila pendente não é apagada automaticamente: pode crescer se a conexão ficar indisponível por muito tempo. A janela mostra o volume observado na última sincronização. Arquivos CSV/HTML locais têm retenção de 30 dias por padrão; a fila é independente. A retenção na nuvem conta **30 dias desde o recebimento**, não a data original da amostra. Isso permite receber filas antigas. Data incorreta/futura no computador pode bloquear um lote e precisa ser corrigida.
+A fila pendente não é apagada automaticamente: pode crescer se a conexão ficar indisponível por muito tempo. A janela mostra o volume observado na última sincronização. Arquivos CSV/HTML locais têm retenção de 30 dias por padrão; a fila é independente. A exclusão automática na nuvem está desativada. O prazo de 30 dias só passará a valer se a rotina opcional for expressamente autorizada e ativada; ela conta desde o recebimento. Data incorreta/futura no computador pode bloquear um lote e precisa ser corrigida.
 
 O sincronizador dá até 90 segundos para escoar lotes por execução e usa timeout de 20 segundos por requisição. Em quedas longas, pode levar vários ciclos para transmitir tudo. Um desligamento abrupto pode perder os últimos registros ainda não gravados.
 

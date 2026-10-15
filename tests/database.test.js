@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import{PGlite}from'@electric-sql/pglite';import{readFile}from'node:fs/promises';
-const migration=await readFile(new URL('../supabase/migrations/202610150001_master_monitor.sql',import.meta.url),'utf8');
+const migration=await readFile(new URL('../supabase/migrations/20261015193217_master_monitor_schema.sql',import.meta.url),'utf8');
 test('Postgres: pareamento atomico, deduplicacao, revogacao, agregacao, RLS e retencao',async()=>{
  const db=new PGlite();try{
  await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key);');await db.exec(migration);
